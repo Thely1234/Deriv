@@ -1,0 +1,49 @@
+name: RiseFall daily scan
+
+on:
+  schedule:
+    # 08:00 UTC every day (15:00 Bangkok)
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never let two runs trade on the same day at the same time.
+  group: risefall-daily
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    name: Analyse market and log setups
+    runs-on: ubuntu-latest
+    # 40 scan passes x ~65s is well under the 6h free-tier limit.
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install websocket-client
+
+      - name: Run scan
+        env:
+          DERIV_TOKEN: ${{ secrets.DERIV_TOKEN }}
+          DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+          # Scan-only by default: this workflow analyses and logs, it never
+          # places an order. Remove this line only after reviewing results.
+          DERIV_SCAN_ONLY: "1"
+        run: python deriv_bot_Rise_Fall_1TickV5_CCI.py
+
+      - name: Archive the session log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-log-${{ github.run_number }}
+          path: logs/
+          retention-days: 30

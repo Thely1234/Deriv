@@ -118,6 +118,14 @@ class Log:
 # =====================
 # WEBSOCKET CLIENT
 # =====================
+def redact_url(url):
+    """Hide the one-time password embedded in an OTP WebSocket URL."""
+    if not url or "otp=" not in url:
+        return url
+    base = url.split("?", 1)[0]
+    return f"{base}?<redacted>"
+
+
 class DerivWS:
     """Thin, retrying wrapper around a Deriv WebSocket connection."""
 
@@ -139,7 +147,7 @@ class DerivWS:
                     ping_timeout=10,
                 )
                 self.url = url
-                self.log.write(f"[WS] connected ({url})")
+                self.log.write(f"[WS] connected ({redact_url(url)})")
                 return True
             except Exception as exc:  # noqa: BLE001 - report and retry
                 last_error = exc
