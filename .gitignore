@@ -1,0 +1,12 @@
+# Local credentials - never commit these
+.env
+
+# Runtime output
+logs/
+state/
+__pycache__/
+*.pyc
+
+# Scratch files from test runs
+out.txt
+err.txt
